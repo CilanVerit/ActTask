@@ -7,6 +7,7 @@ actTask = Flask(__name__)
 # Fetch Database
 actTask.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///acttask.db"
 actTask.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+actTask.json.sort_keys = False
 
 # Start
 db.init_app(actTask)
