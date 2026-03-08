@@ -1,21 +1,23 @@
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
 
-db = SQLAlchemy()
+Base = declarative_base()
+class Task(Base):
+    __tablename__ = "tasks"
 
-class Task(db.Model):
     # Information
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.String(500))
-    status = db.Column(db.String(50), default="Pending") # Overdue, Pending, Completed
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(String(500))
+    status = Column(String(50), default="Pending") # Overdue, Pending, Completed
 
     # Dates
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime(timezone=True), 
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), 
                            default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda:datetime.now(timezone.utc))
-    deadline = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    deadline = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     def serialize(self):
         return {

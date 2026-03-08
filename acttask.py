@@ -1,3 +1,4 @@
+"""
 from flask import Flask, request, jsonify, abort
 from flask_migrate import Migrate
 from models import db, Task
@@ -362,11 +363,10 @@ def serverError(error):
     return jsonify({"error" : "Internal server error."}), 500
 
 if __name__ == "__main__":
-    """
     # Create database without migrations
-        with actTask.app_context():
-            db.create_all()
-    """
+        # with actTask.app_context():
+            # db.create_all()
 
     # Developer mode
     actTask.run(debug=True)
+"""
