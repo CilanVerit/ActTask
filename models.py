@@ -16,3 +16,14 @@ class Task(db.Model):
                            default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda:datetime.now(timezone.utc))
     deadline = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "deadline": self.deadline.isoformat() if self.deadline else None
+        }

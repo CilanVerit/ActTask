@@ -51,49 +51,34 @@ def listTask():
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
-    sort = request.args.get("sort", "created_at")
-    order = request.args.get("order","desc")
 
     query = select(Task)
-
-    if order == "desc":
-        query = query.order_by(getattr(Task, sort).desc())
-    else:
-        query = query.order_by(getattr(Task, sort).asc())
 
     if status_filter:
         query = query.where(Task.status == status_filter)
 
-    # Get total tasks, pages
+    # Get total tasks, pages, query amount
     total_tasks = db.session.scalar(select(func.count()).select_from(Task))
-    total_pages = math.ceil(total_tasks / limit)
+    total_pages = math.ceil(total_tasks / limit) if limit else 1 # Prevent page 0 - invalid
+    count_query = db.session.scalar(select(func.count()).select_from(query.subquery()))
 
     # Pagination
     offset = (page - 1) * limit
     query = query.offset(offset).limit(limit)
+
+    # Auto sort
+    query = query.order_by(Task.created_at.desc())
+
     tasks = db.session.scalars(query).all()
 
-    taskList = []
-
-    for task in tasks:
-        taskList.append({
-            # Information
-            "id" : task.id,
-            "title" : task.title,
-            "description" : task.description,
-            "status" : task.status,
-
-            # Dates
-            "created_at" : task.created_at,
-            "updated_at" : task.updated_at,
-            "deadline" : task.deadline,
-        })
+    taskList = [task.serialize() for task in tasks]
 
     return jsonify({
         "page" : page,
         "limit" : limit,
         "total_tasks" : total_tasks,
         "total_pages" : total_pages,
+        "count_query" : count_query,
         "task" : taskList,
         })
 
@@ -105,18 +90,7 @@ def getTask(id):
     if not task:
         return jsonify({"error":"No such task."}), 404
     
-    return jsonify({
-            # Information
-            "id" : task.id,
-            "title" : task.title,
-            "description" : task.description,
-            "status" : task.status,
-
-            # Dates
-            "created_at" : task.created_at,
-            "updated_at" : task.updated_at,
-            "deadline" : task.deadline,
-    })
+    return jsonify(task.serialize())
 
 # Update a task
 @actTask.route("/tasks/<int:id>",methods=["PUT"])
@@ -139,18 +113,7 @@ def updateTask(id):
 
     db.session.commit()
     
-    return jsonify({
-            # Information
-            "id" : task.id,
-            "title" : task.title,
-            "description" : task.description,
-            "status" : task.status,
-
-            # Dates
-            "created_at" : task.created_at,
-            "updated_at" : task.updated_at,
-            "deadline" : task.deadline,
-    })
+    return jsonify(task.serialize())
 
 # Delete a task
 @actTask.route("/tasks/<int:id>",methods=["DELETE"])
