@@ -87,6 +87,18 @@ def updateTask(id):
         "status" : task.status
     })
 
+# Delete a task
+@actTask.route("/tasks/<int:id>",methods=["DELETE"])
+def deleteTask(id):
+    task = db.session.get(Task, id)
+
+    if not task:
+        return {"error":"No such task."}, 404
+    
+    db.session.delete(task)
+    db.session.commit()
+
+    return {"message":"Deleted successfully."}
 
 if __name__ == "__main__":
     # Create database
