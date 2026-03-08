@@ -4,12 +4,15 @@ from models import db, Task
 from sqlalchemy import select, func
 import math
 from config import Config
+from flasgger import Swagger
 
 # Start Flask app
 actTask = Flask(__name__)
 
 # Configuration
 actTask.config.from_object(Config)
+
+swagger = Swagger(actTask)
 
 # JSON key sorting
 actTask.json.sort_keys = False
@@ -28,6 +31,51 @@ def home():
 # Create a task 
 @actTask.route("/tasks",methods=["POST"])
 def createTask():
+    """
+    Create a new task
+    ---
+    tags:
+        - Tasks
+    requestBody:
+        required: true
+        content:
+            application/json:
+            schema:
+                type: object
+                properties:
+                    title:
+                        type: string
+                        example: Finish backend API
+                    description:
+                        type: string
+                        example: Implement pagination
+                    deadline:
+                        type: string
+                        format: date-time
+    responses:
+    201:
+        description: Task created successfully.
+        schema:
+            type: object
+            properties:
+                id:
+                type: integer
+                title:
+                type: string
+                description:
+                type: string
+                status:
+                type: string
+                created_at:
+                type: string
+                updated_at:
+                type: string
+                deadline:
+                type: string
+    400:
+        description: This field is required.
+    """
+
     data = request.get_json()
 
     # Information
@@ -50,6 +98,38 @@ def createTask():
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
 def listTask():
+    """
+    Get all tasks
+    ---
+    tags:
+        - Tasks
+    parameters:
+        - name: page
+          in: query
+          type: integer
+          default: 1
+          description: Page number
+
+        - name: limit
+          in: query
+          type: integer
+          default: 10
+          description: Tasks per page
+
+        - name: status
+          in: query
+          type: string
+          description: Filter by status (Pending, Completed, Overdue)
+
+        - name: search
+          in: query
+          type: string
+          description: Search title or description
+    responses:
+    200:
+        description: List of tasks
+    """
+        
     # Status filter (Overdue, Pending, Completed)
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
@@ -100,6 +180,16 @@ def listTask():
 # Get statistic
 @actTask.route("/tasks/stats", methods=["GET"])
 def getStats():
+    """
+    Get user's statistics
+    ---
+    tags:
+        - Tasks
+    responses:
+    200:
+        description: User statistics
+    """
+
     total = db.session.scalar(select(func.count()).select_from(Task))
     completed = db.session.scalar(select(func.count()).where(Task.status == "Completed"))
     pending = db.session.scalar(select(func.count()).where(Task.status == "Pending"))
@@ -115,6 +205,23 @@ def getStats():
 # Get a specific task 
 @actTask.route("/tasks/<int:id>",methods=["GET"])
 def getTask(id):
+    """
+    Get a specific task
+    ---
+    tags:
+        - Tasks
+    parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+    responses:
+    200:
+        description: Task retrieved
+    404:
+        description: No task found.
+    """
+
     task = db.session.get(Task, id)
 
     if not task:
@@ -127,6 +234,31 @@ def getTask(id):
 # Update a task
 @actTask.route("/tasks/<int:id>",methods=["PUT"])
 def updateTask(id):
+    """
+    Update a task
+    ---
+    tags:
+        - Tasks
+    parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+        - name: body
+          in: body
+          required: true
+          schema:
+            properties:
+                title:
+                type: string
+                description:
+                type: string
+    responses:
+    200:
+        description: Task updated successfully.
+    404:
+        description: No task found.
+    """
     task = db.session.get(Task, id)
 
     if not task:
@@ -149,15 +281,39 @@ def updateTask(id):
 # Update status
 @actTask.route("/tasks/<int:id>/status", methods=["PATCH"])
 def updateStatus(id):
+    """
+    Update task status
+    ---
+    tags:
+        - Tasks
+    parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+        - name: body
+          in: body
+          required: true
+          schema:
+            properties:
+                status:
+                type: string
+                example: Completed
+    responses:
+    200:
+        description: Status updated.
+    404:
+        description: No task found.
+    """
+
     task = db.session.get(Task, id)
+
+    if not task:
+        abort(404)
 
     data = request.get_json()
     task.status = data.get("status", task.status)
 
-    if not task:
-        abort(404)
-    
-    task.status = "Completed"
     db.session.commit()
 
     return jsonify(task.serialize())
@@ -165,6 +321,23 @@ def updateStatus(id):
 # Delete a task
 @actTask.route("/tasks/<int:id>",methods=["DELETE"])
 def deleteTask(id):
+    """
+    Delete a task
+    ---
+    tags:
+        - Tasks
+    parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+    responses:
+      200:
+        description: Deleted successfully.
+      404:
+        description: No task found.
+    """
+
     task = db.session.get(Task, id)
 
     if not task:
@@ -178,11 +351,11 @@ def deleteTask(id):
 # Error Handlers
 @actTask.errorhandler(400)
 def requiredEmpty(error):
-    return jsonify({"error" : "This field is required"}), 400
+    return jsonify({"error" : "This field is required."}), 400
 
 @actTask.errorhandler(404)
 def notFound(error):
-    return jsonify({"error" : "No tasks found."}), 404
+    return jsonify({"error" : "No task found."}), 404
 
 @actTask.errorhandler(500)
 def serverError(error):
