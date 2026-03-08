@@ -51,8 +51,15 @@ def listTask():
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
+    search = request.args.get("search")
 
     query = select(Task)
+
+    if search:
+        query = query.where(
+            Task.title.ilike(f"%{search}%") |
+            Task.description.ilike(f"%{search}%")
+        )
 
     if status_filter:
         query = query.where(Task.status == status_filter)
