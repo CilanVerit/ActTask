@@ -32,6 +32,22 @@ def createTask():
 
     return {"message":"New task added!"}, 201
 
+# Get all tasks
+@actTask.route("/tasks",methods=["GET"])
+def listTask():
+    tasks = Task.query.all()
+    taskList = []
+
+    for task in tasks:
+        taskList.append({
+            "id" : task.id,
+            "title" : task.title,
+            "description" : task.description,
+            "status" : task.status,
+        })
+
+    return jsonify(taskList)
+
 if __name__ == "__main__":
     # Create database
     with actTask.app_context():
