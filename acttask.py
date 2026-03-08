@@ -29,7 +29,6 @@ def createTask():
     # Information
     title = data.get("title")
     description = data.get("description")
-    status = data.get("status")
 
     # Dates
     deadline = data.get("deadline")
@@ -37,7 +36,7 @@ def createTask():
     if title is not None and title.strip() == "":
         return jsonify({"error": "Title cannot be empty."}), 400
 
-    newTask = Task(title=title, description=description, status=status, deadline=deadline)
+    newTask = Task(title=title, description=description, deadline=deadline)
 
     db.session.add(newTask)
     db.session.commit()
@@ -47,7 +46,7 @@ def createTask():
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
 def listTask():
-    # Status filter (Missed, Pending, Completed)
+    # Status filter (Overdue, Pending, Completed)
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
@@ -77,17 +76,22 @@ def listTask():
     query = query.order_by(Task.created_at.desc())
 
     tasks = db.session.scalars(query).all()
+    taskList = []
 
-    taskList = [task.serialize() for task in tasks]
+    for task in tasks:
+        task.update_deadline()
+        taskList.append(task.serialize())
 
-    return jsonify({
+    db.session.commit()
+
+    return jsonify(({
         "page" : page,
         "limit" : limit,
         "total_tasks" : total_tasks,
         "total_pages" : total_pages,
         "count_query" : count_query,
         "task" : taskList,
-        })
+        }))
 
 # Get a specific task 
 @actTask.route("/tasks/<int:id>",methods=["GET"])
@@ -97,6 +101,8 @@ def getTask(id):
     if not task:
         return jsonify({"error":"No such task."}), 404
     
+    task.update_deadline()
+
     return jsonify(task.serialize())
 
 # Update a task
@@ -116,7 +122,6 @@ def updateTask(id):
 
     task.title = data.get("title",task.title)
     task.description = data.get("description",task.description)
-    task.status = data.get("status",task.status)
 
     db.session.commit()
     
