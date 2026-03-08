@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from models import db, Task
-from sqlalchemy import select
+from sqlalchemy import select, func
+import math
 
 # Start Flask app
 actTask = Flask(__name__)
@@ -50,17 +51,28 @@ def listTask():
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
+    sort = request.args.get("sort", "created_at")
+    order = request.args.get("order","desc")
 
     query = select(Task)
 
+    if order == "desc":
+        query = query.order_by(getattr(Task, sort).desc())
+    else:
+        query = query.order_by(getattr(Task, sort).asc())
+
     if status_filter:
         query = query.where(Task.status == status_filter)
+
+    # Get total tasks, pages
+    total_tasks = db.session.scalar(select(func.count()).select_from(Task))
+    total_pages = math.ceil(total_tasks / limit)
 
     # Pagination
     offset = (page - 1) * limit
     query = query.offset(offset).limit(limit)
     tasks = db.session.scalars(query).all()
-    
+
     taskList = []
 
     for task in tasks:
@@ -77,7 +89,13 @@ def listTask():
             "deadline" : task.deadline,
         })
 
-    return jsonify(taskList)
+    return jsonify({
+        "page" : page,
+        "limit" : limit,
+        "total_tasks" : total_tasks,
+        "total_pages" : total_pages,
+        "task" : taskList,
+        })
 
 # Get a specific task 
 @actTask.route("/tasks/<int:id>",methods=["GET"])
@@ -150,7 +168,6 @@ def deleteTask(id):
 if __name__ == "__main__":
     # Create database
     with actTask.app_context():
-        db.drop_all()
         db.create_all()
 
     # Developer mode
