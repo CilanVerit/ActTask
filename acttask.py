@@ -46,7 +46,21 @@ def createTask():
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
 def listTask():
-    tasks = db.session.scalars(select(Task)).all()
+    # Status filter (Missed, Pending, Completed)
+    status_filter = request.args.get("status")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
+
+    query = select(Task)
+
+    if status_filter:
+        query = query.where(Task.status == status_filter)
+
+    # Pagination
+    offset = (page - 1) * limit
+    query = query.offset(offset).limit(limit)
+    tasks = db.session.scalars(query).all()
+    
     taskList = []
 
     for task in tasks:
