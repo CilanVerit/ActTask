@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 from models import db, Task
 from sqlalchemy import select, func
 import math
@@ -33,15 +33,15 @@ def createTask():
     # Dates
     deadline = data.get("deadline")
 
-    if title is not None and title.strip() == "":
-        return jsonify({"error": "Title cannot be empty."}), 400
+    if not title or title.strip() == "":
+        abort(400)
 
     newTask = Task(title=title, description=description, deadline=deadline)
 
     db.session.add(newTask)
     db.session.commit()
 
-    return jsonify({"message":"New task added!"}), 201
+    return jsonify(newTask.serialize()), 201
 
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
@@ -56,7 +56,7 @@ def listTask():
 
     if search:
         query = query.where(
-            Task.title.ilike(f"%{search}%") |
+            Task.title.ilike(f"%{search}%"),
             Task.description.ilike(f"%{search}%")
         )
 
@@ -114,7 +114,7 @@ def getTask(id):
     task = db.session.get(Task, id)
 
     if not task:
-        return jsonify({"error":"No such task."}), 404
+        abort(404)
     
     task.update_deadline()
 
@@ -126,14 +126,14 @@ def updateTask(id):
     task = db.session.get(Task, id)
 
     if not task:
-        return jsonify({"error":"No such task."}), 404
+        abort(404)
     
     data = request.get_json()
 
     title = data.get("title")
 
-    if title is not None and title.strip() == "":
-        return jsonify({"error": "Title cannot be empty."}), 400
+    if not title or title.strip() == "":
+        abort (400)
 
     task.title = data.get("title",task.title)
     task.description = data.get("description",task.description)
@@ -143,12 +143,15 @@ def updateTask(id):
     return jsonify(task.serialize())
 
 # Update status
-@actTask.route("/tasks", methods=["PATCH"])
+@actTask.route("/tasks/<int:id>/status", methods=["PATCH"])
 def updateStatus(id):
     task = db.session.get(Task, id)
 
+    data = request.get_json()
+    task.status = data.get("status", task.status)
+
     if not task:
-        return jsonify({"error" : "No task found."}), 404
+        abort(404)
     
     task.status = "Completed"
     db.session.commit()
@@ -161,12 +164,25 @@ def deleteTask(id):
     task = db.session.get(Task, id)
 
     if not task:
-        return jsonify({"error":"No such task."}), 404
+        abort(404)
     
     db.session.delete(task)
     db.session.commit()
 
     return jsonify({"message":"Deleted successfully."})
+
+# Error Handlers
+@actTask.errorhandler(400)
+def requiredEmpty(error):
+    return jsonify({"error" : "This field is required"}), 400
+
+@actTask.errorhandler(404)
+def notFound(error):
+    return jsonify({"error" : "No tasks found."}), 404
+
+@actTask.errorhandler(500)
+def serverError(error):
+    return jsonify({"error" : "Internal server error."}), 500
 
 if __name__ == "__main__":
     # Create database
