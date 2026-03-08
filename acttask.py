@@ -36,7 +36,7 @@ def createTask():
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
 def listTask():
-    tasks = Task.query.all()
+    tasks = db.session.scalars(select(Task)).all()
     taskList = []
 
     for task in tasks:
