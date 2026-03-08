@@ -2,14 +2,17 @@ from flask import Flask, request, jsonify
 from models import db, Task
 from sqlalchemy import select
 
+# Start Flask app
 actTask = Flask(__name__)
 
-# Fetch Database
+# Configuration
 actTask.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///acttask.db"
 actTask.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# JSON key sorting
 actTask.json.sort_keys = False
 
-# Start
+# Initialize database
 db.init_app(actTask)
 
 # Homepage
