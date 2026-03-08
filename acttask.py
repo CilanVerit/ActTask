@@ -142,6 +142,19 @@ def updateTask(id):
     
     return jsonify(task.serialize())
 
+# Update status
+@actTask.route("/tasks", methods=["PATCH"])
+def updateStatus(id):
+    task = db.session.get(Task, id)
+
+    if not task:
+        return jsonify({"error" : "No task found."}), 404
+    
+    task.status = "Completed"
+    db.session.commit()
+
+    return jsonify(task.serialize())
+
 # Delete a task
 @actTask.route("/tasks/<int:id>",methods=["DELETE"])
 def deleteTask(id):
