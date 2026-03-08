@@ -33,6 +33,9 @@ def createTask():
     # Dates
     deadline = data.get("deadline")
 
+    if title is not None and title.strip() == "":
+        return {"error": "Title cannot be empty."}, 400
+
     newTask = Task(title=title, description=description, status=status, deadline=deadline)
 
     db.session.add(newTask)
@@ -92,6 +95,11 @@ def updateTask(id):
         return {"error":"No such task."}, 404
     
     data = request.get_json()
+
+    title = data.get("title")
+
+    if title is not None and title.strip() == "":
+        return {"error": "Title cannot be empty."}, 400
 
     task.title = data.get("title",task.title)
     task.description = data.get("description",task.description)
