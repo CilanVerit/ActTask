@@ -16,6 +16,22 @@ db.init_app(actTask)
 def home():
     return "ActTask is now running!"
 
+# Create a task 
+@actTask.route("/tasks",methods=["POST"])
+def createTask():
+    data = request.get_json()
+
+    title = data.get("title")
+    description = data.get("description")
+    status = data.get("status")
+
+    newTask = Task(title=title, description=description, status=status)
+
+    db.session.add(newTask)
+    db.session.commit()
+
+    return {"message":"New task added!"}, 201
+
 if __name__ == "__main__":
     # Create database
     with actTask.app_context():
