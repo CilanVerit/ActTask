@@ -64,6 +64,30 @@ def getTask(id):
         "status" : task.status
     })
 
+# Update a task
+@actTask.route("/tasks/<int:id>",methods=["PUT"])
+def updateTask(id):
+    task = db.session.get(Task, id)
+
+    if not task:
+        return {"error":"No such task."}, 404
+    
+    data = request.get_json()
+
+    task.title = data.get("title",task.title)
+    task.description = data.get("description",task.description)
+    task.status = data.get("status",task.status)
+
+    db.session.commit()
+    
+    return jsonify({
+        "id" : task.id,
+        "title" : task.title,
+        "description" : task.description,
+        "status" : task.status
+    })
+
+
 if __name__ == "__main__":
     # Create database
     with actTask.app_context():
