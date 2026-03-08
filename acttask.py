@@ -34,14 +34,14 @@ def createTask():
     deadline = data.get("deadline")
 
     if title is not None and title.strip() == "":
-        return {"error": "Title cannot be empty."}, 400
+        return jsonify({"error": "Title cannot be empty."}), 400
 
     newTask = Task(title=title, description=description, status=status, deadline=deadline)
 
     db.session.add(newTask)
     db.session.commit()
 
-    return {"message":"New task added!"}, 201
+    return jsonify({"message":"New task added!"}), 201
 
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
@@ -71,7 +71,7 @@ def getTask(id):
     task = db.session.get(Task, id)
 
     if not task:
-        return {"error":"No such task."}, 404
+        return jsonify({"error":"No such task."}), 404
     
     return jsonify({
             # Information
@@ -92,14 +92,14 @@ def updateTask(id):
     task = db.session.get(Task, id)
 
     if not task:
-        return {"error":"No such task."}, 404
+        return jsonify({"error":"No such task."}), 404
     
     data = request.get_json()
 
     title = data.get("title")
 
     if title is not None and title.strip() == "":
-        return {"error": "Title cannot be empty."}, 400
+        return jsonify({"error": "Title cannot be empty."}), 400
 
     task.title = data.get("title",task.title)
     task.description = data.get("description",task.description)
@@ -126,12 +126,12 @@ def deleteTask(id):
     task = db.session.get(Task, id)
 
     if not task:
-        return {"error":"No such task."}, 404
+        return jsonify({"error":"No such task."}), 404
     
     db.session.delete(task)
     db.session.commit()
 
-    return {"message":"Deleted successfully."}
+    return jsonify({"message":"Deleted successfully."})
 
 if __name__ == "__main__":
     # Create database
