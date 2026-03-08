@@ -1,20 +1,24 @@
 from flask import Flask, request, jsonify, abort
+from flask_migrate import Migrate
 from models import db, Task
 from sqlalchemy import select, func
 import math
+from config import Config
 
 # Start Flask app
 actTask = Flask(__name__)
 
 # Configuration
-actTask.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///acttask.db"
-actTask.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+actTask.config.from_object(Config)
 
 # JSON key sorting
 actTask.json.sort_keys = False
 
 # Initialize database
 db.init_app(actTask)
+
+# Initialize migrations
+migrate = Migrate(actTask, db)
 
 # Homepage
 @actTask.route("/")
@@ -185,9 +189,11 @@ def serverError(error):
     return jsonify({"error" : "Internal server error."}), 500
 
 if __name__ == "__main__":
-    # Create database
-    with actTask.app_context():
-        db.create_all()
+    """
+    # Create database without migrations
+        with actTask.app_context():
+            db.create_all()
+    """
 
     # Developer mode
     actTask.run(debug=True)
