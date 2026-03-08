@@ -25,11 +25,18 @@ def home():
 def createTask():
     data = request.get_json()
 
+    # Information
     title = data.get("title")
     description = data.get("description")
     status = data.get("status")
 
-    newTask = Task(title=title, description=description, status=status)
+    # Dates
+    created_at = data.get("created_at")
+    updated_at = data.get("updated_at")
+    deadline = data.get("deadline")
+
+    newTask = Task(title=title, description=description, status=status,
+                   created_at=created_at, updated_at=updated_at, deadline=deadline)
 
     db.session.add(newTask)
     db.session.commit()
@@ -44,10 +51,16 @@ def listTask():
 
     for task in tasks:
         taskList.append({
+            # Information
             "id" : task.id,
             "title" : task.title,
             "description" : task.description,
             "status" : task.status,
+
+            # Dates
+            "created_at" : task.created_at,
+            "updated_at" : task.updated_at,
+            "deadline" : task.deadline,
         })
 
     return jsonify(taskList)
@@ -61,10 +74,16 @@ def getTask(id):
         return {"error":"No such task."}, 404
     
     return jsonify({
-        "id" : task.id,
-        "title" : task.title,
-        "description" : task.description,
-        "status" : task.status
+            # Information
+            "id" : task.id,
+            "title" : task.title,
+            "description" : task.description,
+            "status" : task.status,
+
+            # Dates
+            "created_at" : task.created_at,
+            "updated_at" : task.updated_at,
+            "deadline" : task.deadline,
     })
 
 # Update a task
@@ -84,10 +103,16 @@ def updateTask(id):
     db.session.commit()
     
     return jsonify({
-        "id" : task.id,
-        "title" : task.title,
-        "description" : task.description,
-        "status" : task.status
+            # Information
+            "id" : task.id,
+            "title" : task.title,
+            "description" : task.description,
+            "status" : task.status,
+
+            # Dates
+            "created_at" : task.created_at,
+            "updated_at" : task.updated_at,
+            "deadline" : task.deadline,
     })
 
 # Delete a task
@@ -106,7 +131,7 @@ def deleteTask(id):
 if __name__ == "__main__":
     # Create database
     with actTask.app_context():
-        print("Creating database tables...")
+        db.drop_all()
         db.create_all()
 
     # Developer mode
