@@ -49,6 +49,21 @@ def listTask():
 
     return jsonify(taskList)
 
+# Get a specific task 
+@actTask.route("/tasks/<int:id>",methods=["GET"])
+def getTask(id):
+    task = db.session.get(Task, id)
+
+    if not task:
+        return {"error":"No such task."}, 404
+    
+    return jsonify({
+        "id" : task.id,
+        "title" : task.title,
+        "description" : task.description,
+        "status" : task.status
+    })
+
 if __name__ == "__main__":
     # Create database
     with actTask.app_context():
