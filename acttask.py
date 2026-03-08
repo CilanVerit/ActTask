@@ -1,11 +1,18 @@
-"""
 from flask import Flask, request, jsonify, abort
 from flask_migrate import Migrate
-from models import db, Task
 from sqlalchemy import select, func
 import math
+
+from models import db, Task, User
 from config import Config
-from flasgger import Swagger
+
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    jwt_required,
+    get_jwt_identity,
+)
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Start Flask app
 actTask = Flask(__name__)
@@ -13,7 +20,9 @@ actTask = Flask(__name__)
 # Configuration
 actTask.config.from_object(Config)
 
-swagger = Swagger(actTask)
+# JWT configuration
+actTask.config["JWT_SECRET_KEY"] = "super-secret-key"
+jwt = JWTManager(actTask)
 
 # JSON key sorting
 actTask.json.sort_keys = False
@@ -31,53 +40,11 @@ def home():
 
 # Create a task 
 @actTask.route("/tasks",methods=["POST"])
+@jwt_required()
 def createTask():
-    """
-    Create a new task
-    ---
-    tags:
-        - Tasks
-    requestBody:
-        required: true
-        content:
-            application/json:
-            schema:
-                type: object
-                properties:
-                    title:
-                        type: string
-                        example: Finish backend API
-                    description:
-                        type: string
-                        example: Implement pagination
-                    deadline:
-                        type: string
-                        format: date-time
-    responses:
-    201:
-        description: Task created successfully.
-        schema:
-            type: object
-            properties:
-                id:
-                type: integer
-                title:
-                type: string
-                description:
-                type: string
-                status:
-                type: string
-                created_at:
-                type: string
-                updated_at:
-                type: string
-                deadline:
-                type: string
-    400:
-        description: This field is required.
-    """
-
     data = request.get_json()
+
+    current_user = get_jwt_identity()
 
     # Information
     title = data.get("title")
@@ -86,10 +53,13 @@ def createTask():
     # Dates
     deadline = data.get("deadline")
 
+    # User
+    owner = current_user
+
     if not title or title.strip() == "":
         abort(400)
 
-    newTask = Task(title=title, description=description, deadline=deadline)
+    newTask = Task(title=title, description=description, deadline=deadline, owner=owner)
 
     db.session.add(newTask)
     db.session.commit()
@@ -98,46 +68,16 @@ def createTask():
 
 # Get all tasks
 @actTask.route("/tasks",methods=["GET"])
+@jwt_required()
 def listTask():
-    """
-    Get all tasks
-    ---
-    tags:
-        - Tasks
-    parameters:
-        - name: page
-          in: query
-          type: integer
-          default: 1
-          description: Page number
-
-        - name: limit
-          in: query
-          type: integer
-          default: 10
-          description: Tasks per page
-
-        - name: status
-          in: query
-          type: string
-          description: Filter by status (Pending, Completed, Overdue)
-
-        - name: search
-          in: query
-          type: string
-          description: Search title or description
-    responses:
-    200:
-        description: List of tasks
-    """
-        
     # Status filter (Overdue, Pending, Completed)
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
     search = request.args.get("search")
 
-    query = select(Task)
+    current_user = get_jwt_identity()
+    query = select(Task).where(Task.owner == current_user)
 
     if search:
         query = query.where(
@@ -178,55 +118,55 @@ def listTask():
         "task" : taskList,
         }))
 
-# Get statistic
 @actTask.route("/tasks/stats", methods=["GET"])
+@jwt_required()
 def getStats():
-    """
-    Get user's statistics
-    ---
-    tags:
-        - Tasks
-    responses:
-    200:
-        description: User statistics
-    """
 
-    total = db.session.scalar(select(func.count()).select_from(Task))
-    completed = db.session.scalar(select(func.count()).where(Task.status == "Completed"))
-    pending = db.session.scalar(select(func.count()).where(Task.status == "Pending"))
-    overdue = db.session.scalar(select(func.count()).where(Task.status == "Overdue"))
+    current_user = get_jwt_identity()
+
+    total = db.session.scalar(
+        select(func.count()).where(Task.owner == current_user)
+    )
+
+    completed = db.session.scalar(
+        select(func.count()).where(
+            Task.owner == current_user,
+            Task.status == "Completed"
+        )
+    )
+
+    pending = db.session.scalar(
+        select(func.count()).where(
+            Task.owner == current_user,
+            Task.status == "Pending"
+        )
+    )
+
+    overdue = db.session.scalar(
+        select(func.count()).where(
+            Task.owner == current_user,
+            Task.status == "Overdue"
+        )
+    )
 
     return jsonify({
-        "total" : total,
-        "completed" : completed,
-        "pending" : pending,
-        "overdue" : overdue,
+        "total": total,
+        "completed": completed,
+        "pending": pending,
+        "overdue": overdue,
     })
 
 # Get a specific task 
 @actTask.route("/tasks/<int:id>",methods=["GET"])
+@jwt_required()
 def getTask(id):
-    """
-    Get a specific task
-    ---
-    tags:
-        - Tasks
-    parameters:
-        - name: id
-          in: path
-          required: true
-          type: integer
-    responses:
-    200:
-        description: Task retrieved
-    404:
-        description: No task found.
-    """
 
     task = db.session.get(Task, id)
 
     if not task:
         abort(404)
+    if task.owner != get_jwt_identity():
+        abort(403)
     
     task.update_deadline()
 
@@ -234,33 +174,12 @@ def getTask(id):
 
 # Update a task
 @actTask.route("/tasks/<int:id>",methods=["PUT"])
+@jwt_required()
 def updateTask(id):
-    """
-    Update a task
-    ---
-    tags:
-        - Tasks
-    parameters:
-        - name: id
-          in: path
-          required: true
-          type: integer
-        - name: body
-          in: body
-          required: true
-          schema:
-            properties:
-                title:
-                type: string
-                description:
-                type: string
-    responses:
-    200:
-        description: Task updated successfully.
-    404:
-        description: No task found.
-    """
     task = db.session.get(Task, id)
+
+    if task.owner != get_jwt_identity():
+        abort(403)
 
     if not task:
         abort(404)
@@ -281,36 +200,15 @@ def updateTask(id):
 
 # Update status
 @actTask.route("/tasks/<int:id>/status", methods=["PATCH"])
+@jwt_required()
 def updateStatus(id):
-    """
-    Update task status
-    ---
-    tags:
-        - Tasks
-    parameters:
-        - name: id
-          in: path
-          required: true
-          type: integer
-        - name: body
-          in: body
-          required: true
-          schema:
-            properties:
-                status:
-                type: string
-                example: Completed
-    responses:
-    200:
-        description: Status updated.
-    404:
-        description: No task found.
-    """
-
     task = db.session.get(Task, id)
 
     if not task:
         abort(404)
+
+    if task.owner != get_jwt_identity():
+        abort(403)
 
     data = request.get_json()
     task.status = data.get("status", task.status)
@@ -321,52 +219,105 @@ def updateStatus(id):
 
 # Delete a task
 @actTask.route("/tasks/<int:id>",methods=["DELETE"])
+@jwt_required()
 def deleteTask(id):
-    """
-    Delete a task
-    ---
-    tags:
-        - Tasks
-    parameters:
-        - name: id
-          in: path
-          type: integer
-          required: true
-    responses:
-      200:
-        description: Deleted successfully.
-      404:
-        description: No task found.
-    """
-
     task = db.session.get(Task, id)
 
     if not task:
         abort(404)
+
+    if task.owner != get_jwt_identity():
+        abort(403)
     
     db.session.delete(task)
     db.session.commit()
 
     return jsonify({"message":"Deleted successfully."})
 
+# Register account
+@actTask.route("/auth/register",methods=["POST"])
+def registerAccount():
+    data = request.get_json()
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or username.strip() == "":
+        abort(400)
+
+    if not password or password.strip() == "":
+        abort(400)
+
+    # Check existed username
+    existed = db.session.execute(select(User).where(User.username == username)).scalar()
+
+    if existed:
+        abort(409)
+
+    hashed_password = generate_password_hash(password)
+
+    new_user = User(username = username, password = hashed_password)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message" : "Account registered successfully."}), 201
+
+# Login account
+@actTask.route("/auth/login",methods=["POST"])
+def login():
+    data = request.get_json()
+
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or username.strip() == "":
+        abort(400)
+
+    if not password or password.strip() == "":
+        abort(400)
+
+    # Check existed username
+    user = db.session.execute(select(User).where(User.username == username)).scalar()
+
+    if not user or not check_password_hash(user.password, password):
+        abort(401)
+
+    access_token = create_access_token(identity = user.userid)
+
+    return jsonify({"access_token": access_token})
+
 # Error Handlers
 @actTask.errorhandler(400)
 def requiredEmpty(error):
     return jsonify({"error" : "This field is required."}), 400
 
+@actTask.errorhandler(401)
+def invalidUser(error):
+    return jsonify({"error" : "Invalid user or password."}), 401
+
+@actTask.errorhandler(403)
+def unauthorized(error):
+    return jsonify({"error": "Unauthorized"}), 403
+
 @actTask.errorhandler(404)
 def notFound(error):
     return jsonify({"error" : "No task found."}), 404
+
+@actTask.errorhandler(409)
+def existAcc(error):
+    return jsonify({"error" : "Username existed."}), 409
 
 @actTask.errorhandler(500)
 def serverError(error):
     return jsonify({"error" : "Internal server error."}), 500
 
 if __name__ == "__main__":
+    """
     # Create database without migrations
-        # with actTask.app_context():
-            # db.create_all()
+        with actTask.app_context():
+            db.create_all()
+    """
 
     # Developer mode
     actTask.run(debug=True)
-"""
