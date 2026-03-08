@@ -93,6 +93,21 @@ def listTask():
         "task" : taskList,
         }))
 
+# Get statistic
+@actTask.route("/tasks/stats", methods=["GET"])
+def getStats():
+    total = db.session.scalar(select(func.count()).select_from(Task))
+    completed = db.session.scalar(select(func.count()).where(Task.status == "Completed"))
+    pending = db.session.scalar(select(func.count()).where(Task.status == "Pending"))
+    overdue = db.session.scalar(select(func.count()).where(Task.status == "Overdue"))
+
+    return jsonify({
+        "total" : total,
+        "completed" : completed,
+        "pending" : pending,
+        "overdue" : overdue,
+    })
+
 # Get a specific task 
 @actTask.route("/tasks/<int:id>",methods=["GET"])
 def getTask(id):
