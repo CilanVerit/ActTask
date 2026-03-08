@@ -31,12 +31,9 @@ def createTask():
     status = data.get("status")
 
     # Dates
-    created_at = data.get("created_at")
-    updated_at = data.get("updated_at")
     deadline = data.get("deadline")
 
-    newTask = Task(title=title, description=description, status=status,
-                   created_at=created_at, updated_at=updated_at, deadline=deadline)
+    newTask = Task(title=title, description=description, status=status, deadline=deadline)
 
     db.session.add(newTask)
     db.session.commit()
