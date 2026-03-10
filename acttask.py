@@ -21,7 +21,6 @@ actTask = Flask(__name__)
 actTask.config.from_object(Config)
 
 # JWT configuration
-actTask.config["JWT_SECRET_KEY"] = "super-secret-key"
 jwt = JWTManager(actTask)
 
 # JSON key sorting
