@@ -6,7 +6,7 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:myacttask@localhost:5432/acttask"
+        "DATABASE_URL", "sqlite:///acttask.db"
         # "postgresql://postgres:myacttask@localhost:5432/acttask" - PostgreSQL version
         # "sqlite:///acttask.db" - SQLite version
     )
