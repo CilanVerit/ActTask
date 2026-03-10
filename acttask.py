@@ -43,7 +43,7 @@ def home():
 def createTask():
     data = request.get_json()
 
-    current_user = get_jwt_identity()
+    current_user = int(get_jwt_identity())
 
     # Information
     title = data.get("title")
@@ -75,7 +75,7 @@ def listTask():
     limit = request.args.get("limit", 10, type=int) # Number of tasks in a page
     search = request.args.get("search")
 
-    current_user = get_jwt_identity()
+    current_user = int(get_jwt_identity())
     query = select(Task).where(Task.owner == current_user)
 
     if search:
@@ -121,7 +121,7 @@ def listTask():
 @jwt_required()
 def getStats():
 
-    current_user = get_jwt_identity()
+    current_user = int(get_jwt_identity())
 
     total = db.session.scalar(
         select(func.count()).where(Task.owner == current_user)
@@ -164,7 +164,7 @@ def getTask(id):
 
     if not task:
         abort(404)
-    if task.owner != get_jwt_identity():
+    if task.owner != int(get_jwt_identity()):
         abort(403)
     
     task.update_deadline()
@@ -177,10 +177,7 @@ def getTask(id):
 def updateTask(id):
     task = db.session.get(Task, id)
 
-    if not task:
-        abort(404)
-        
-    if task.owner != get_jwt_identity():
+    if task.owner != int(get_jwt_identity()):
         abort(403)
     
     data = request.get_json()
@@ -206,7 +203,7 @@ def updateStatus(id):
     if not task:
         abort(404)
 
-    if task.owner != get_jwt_identity():
+    if task.owner != int(get_jwt_identity()):
         abort(403)
 
     data = request.get_json()
@@ -225,7 +222,7 @@ def deleteTask(id):
     if not task:
         abort(404)
 
-    if task.owner != get_jwt_identity():
+    if task.owner != int(get_jwt_identity()):
         abort(403)
     
     db.session.delete(task)
