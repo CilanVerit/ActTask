@@ -80,7 +80,7 @@ def listTask():
 
     if search:
         query = query.where(
-            Task.title.ilike(f"%{search}%"),
+            Task.title.ilike(f"%{search}%") |
             Task.description.ilike(f"%{search}%")
         )
 
@@ -88,7 +88,7 @@ def listTask():
         query = query.where(Task.status == status_filter)
 
     # Get total tasks, pages, query amount
-    total_tasks = db.session.scalar(select(func.count()).select_from(Task))
+    total_tasks = db.session.scalar(select(func.count()).where(Task.owner == current_user))
     total_pages = math.ceil(total_tasks / limit) if limit else 1 # Prevent page 0 - invalid
     count_query = db.session.scalar(select(func.count()).select_from(query.subquery()))
 
@@ -177,11 +177,11 @@ def getTask(id):
 def updateTask(id):
     task = db.session.get(Task, id)
 
-    if task.owner != get_jwt_identity():
-        abort(403)
-
     if not task:
         abort(404)
+        
+    if task.owner != get_jwt_identity():
+        abort(403)
     
     data = request.get_json()
 
