@@ -282,7 +282,7 @@ def login():
     if not user or not check_password_hash(user.password, password):
         abort(401)
 
-    access_token = create_access_token(identity = user.userid)
+    access_token = create_access_token(identity = str(user.userid))
 
     return jsonify({"access_token": access_token})
 

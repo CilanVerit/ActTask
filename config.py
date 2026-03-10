@@ -7,6 +7,8 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL", "sqlite:///acttask.db"
+        # "postgresql://postgres:myacttask@localhost:5432/acttask" - PostgreSQL version
+        # "sqlite:///acttask.db" - SQLite version
     )
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
