@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify, abort, render_template
 from flask_migrate import Migrate
 from sqlalchemy import select, func
 import math
@@ -35,7 +35,7 @@ migrate = Migrate(actTask, db)
 # Homepage
 @actTask.route("/")
 def home():
-    return "ActTask is now running!"
+    return render_template("index.html")
 
 # Create a task 
 @actTask.route("/tasks",methods=["POST"])
