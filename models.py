@@ -6,9 +6,12 @@ db = SQLAlchemy()
 class Task(db.Model):
     # Information
     id = db.Column(db.Integer, primary_key=True)
+
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(500))
+
     status = db.Column(db.String(50), default="Pending") # Overdue, Pending, Completed
+    
     owner = db.Column(db.Integer, db.ForeignKey("users.userid"), nullable = False)
     user = db.relationship("User", backref = "tasks")
 
@@ -47,10 +50,41 @@ class User(db.Model):
     userid = db.Column(db.Integer, primary_key=True)
 
     username = db.Column(db.String(100), unique=True, nullable=False)
-
     password = db.Column(db.String(200), nullable=False)
 
     joined_at = db.Column(
         db.DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc)
     )
+    def serialize(self):
+        return {
+            "id": self.userid,
+            "username": self.username,
+            "joined_at": self.joined_at.isoformat()
+        }
+
+class AILog(db.Model):
+    __tablename__ = "ai_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    prompt = db.Column(db.Text, nullable=False)
+    response = db.Column(db.Text, nullable=False)
+
+    latency = db.Column(db.Float)   # seconds
+    score = db.Column(db.Float)     # simple evaluation score
+
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "prompt": self.prompt,
+            "response": self.response,
+            "latency": self.latency,
+            "score": self.score,
+            "created_at": self.created_at.isoformat()
+        }

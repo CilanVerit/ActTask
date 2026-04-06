@@ -5,6 +5,7 @@ import math
 import time
 from routes.task_routes import task_bp
 from routes.auth_routes import auth_bp
+from routes.ai_routes import ai_bp
 
 from models import db, Task, User
 from config import Config
@@ -40,6 +41,7 @@ jwt = JWTManager(actTask)
 # Register blueprints from routes
 actTask.register_blueprint(task_bp)
 actTask.register_blueprint(auth_bp)
+actTask.register_blueprint(ai_bp)
 
 # Homepage
 @actTask.route("/")
@@ -74,11 +76,11 @@ def server_error(error):
 #end = time.time()
 
 if __name__ == "__main__":
-    """
+    '''
     # Create database without migrations
-        with actTask.app_context():
-            db.create_all()
-    """
+    with actTask.app_context():
+        db.create_all()
+    '''
     #print((end - start) * 1000) #ms latency
 
     # Developer mode
