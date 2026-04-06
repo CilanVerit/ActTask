@@ -98,6 +98,9 @@ def plan_day():
 
             if parsed_score:
                 final_score = parsed_score
+            
+            if extract_overload_flag(critique):
+                final_score = min(final_score, 5)
 
             # Stop early if good enough
             if parsed_score and parsed_score >= 8:
@@ -115,6 +118,12 @@ def plan_day():
 
         # Evaluate response
         score = final_score if final_score else evaluate_response(improved_plan)
+
+        # Realism constraint
+        total_minutes = estimate_total_time(improved_plan)
+
+        if total_minutes > 480:  # 8 hours
+            score = min(score, 5)
 
         # Store log
         log = AILog(
@@ -152,10 +161,26 @@ def critique_plan(plan_text, task_list):
     {plan_text}
 
     Evaluate the plan based on:
-    1. Task prioritization (overdue first?)
-    2. Realism (not overloaded?)
-    3. Clarity (easy to follow?)
-    4. Coverage (important tasks included?)
+    1. Prioritization:
+    - Are overdue tasks scheduled first?
+
+    2. Realism:
+    - Total planned work time must NOT exceed 8 hours, unless user wants to
+    - Each task must have a clear time estimate (examples, 30 min, 1 hour, etc.)
+    - Avoid scheduling more than 3–5 tasks per time block
+    - No time overlaps or impossible scheduling
+    - Breaks or gaps should exist between tasks
+    - Flag any overload clearly
+
+    3. Clarity:
+    - Is the plan easy to follow?
+
+    4. Coverage:
+    - Are important tasks included?
+
+    Be harsh on realism. Penalize overloaded schedules heavily.
+    Say Rule! To strongly emphasize a broken rule from the above rules.
+    State what were the broken rule(s).
 
     Output format:
     Score: X/10
@@ -187,6 +212,14 @@ def improve_plan(original_plan, critique):
     {critique}
 
     Improve the plan based on the critique.
+    Fix the issues with a strong focus on:
+    - Reducing overload
+    - Keeping total time under 8 hours, unless user wants to do more
+    - Adding realistic time estimates
+    - Spreading tasks properly across the day
+
+    If you hear Rule! that means you are breaking rule(s) and got heavy penalty.
+    Focus on where the broken rule(s) were and adjust correspondingly.
 
     Keep same format:
     Morning / Afternoon / Evening
@@ -208,18 +241,46 @@ def evaluate_response(response_text):
     if not response_text:
         return 0
 
-    length_score = min(len(response_text) / 200, 1)
+    score = 0
 
-    keyword_bonus = 0
-    if "priority" in response_text.lower():
-        keyword_bonus += 0.2
+    # Check required sections
     if "morning" in response_text.lower():
-        keyword_bonus += 0.2
+        score += 0.25
+    if "afternoon" in response_text.lower():
+        score += 0.25
+    if "evening" in response_text.lower():
+        score += 0.25
 
-    return round(min(length_score + keyword_bonus, 1), 2)
+    # Check bullet points
+    if "-" in response_text:
+        score += 0.15
+
+    # Check time estimates (very important)
+    if re.search(r"\b(min|hour)", response_text.lower()):
+        score += 0.1
+
+    return round(score, 2)
 
 def extract_score(critique_text):
     match = re.search(r"(\d+)/10", critique_text)
     if match:
         return int(match.group(1))
     return None
+
+def estimate_total_time(plan_text):
+    times = re.findall(r"(\d+(?:\.\d+)?)\s*(min|mins|hour|hours|hr|hrs)", plan_text.lower())
+    total = 0
+
+    for value, unit in times:
+        value = int(value)
+        if unit == "hour":
+            total += value * 60
+        else:
+            total += value
+
+    return total  # in minutes
+
+def extract_overload_flag(text):
+    if "Rule!" in text.lower():
+        return True
+    return False
