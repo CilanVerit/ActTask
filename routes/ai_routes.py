@@ -23,21 +23,18 @@ def plan_day():
 
     # Get user tasks
     tasks = db.session.scalars(
-        select(Task).where(
+        select(Task)
+        .where(
             Task.owner == current_user,
             Task.status != "Completed"
         )
+        .order_by(Task.created_at.desc())
     ).all()
     tasks = sorted(tasks, key=lambda t: t.status == "Overdue", reverse=True)
 
     tasks_text = "\n".join(
         [f"- {t.title} ({t.status})" for t in tasks]
     )
-
-    return jsonify({
-        "tasks_used": tasks_text,
-        "message": "AI would generate plan here"
-    })
 
     if not tasks:
         abort(400)

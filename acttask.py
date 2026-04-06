@@ -80,7 +80,7 @@ if __name__ == "__main__":
     # Create database without migrations
     with actTask.app_context():
         db.create_all()
-    '''
+    #'''
     #print((end - start) * 1000) #ms latency
 
     # Developer mode

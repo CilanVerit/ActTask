@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, abort
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import select, func
 import math
+from datetime import datetime, timezone, timedelta
 
 from models import db, Task
 
@@ -11,6 +12,8 @@ task_bp = Blueprint("task", __name__, url_prefix="/tasks")
 @task_bp.route("",methods=["POST"])
 @jwt_required()
 def create_task():
+    # start = time.time()
+
     data = request.get_json()
 
     current_user = int(get_jwt_identity())
@@ -22,17 +25,26 @@ def create_task():
     # Dates
     deadline = data.get("deadline")
 
+    # REMOVE when putting on production (let customer choose or default now)
+    if not deadline:
+        deadline = datetime.now(timezone.utc) + timedelta(days=1)
+
+    # Status
+    status = data.get("status", "Pending") 
+
     # User
     owner = current_user
 
     if not title or title.strip() == "":
         abort(400)
 
-    newTask = Task(title=title, description=description, deadline=deadline, owner=owner)
+    newTask = Task(title=title, description=description, deadline=deadline, owner=owner, status=status)
 
     db.session.add(newTask)
     db.session.commit()
 
+    # print("After commit:", time.time() - start)
+    
     return jsonify(newTask.serialize()), 201
 
 # 2. Get all tasks
@@ -79,6 +91,7 @@ def list_task():
     db.session.commit()
 
     return jsonify(({
+#        "time" : time.time(),
         "page" : page,
         "limit" : limit,
         "total_tasks" : total_tasks,

@@ -69,10 +69,15 @@ class AILog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     prompt = db.Column(db.Text, nullable=False)
-    response = db.Column(db.Text, nullable=False)
 
-    latency = db.Column(db.Float)   # seconds
-    score = db.Column(db.Float)     # simple evaluation score
+    # Multi-agent outputs
+    original_plan = db.Column(db.Text)
+    critique = db.Column(db.Text)
+    final_plan = db.Column(db.Text)
+
+    # Metrics
+    latency = db.Column(db.Float)
+    score = db.Column(db.Float)
 
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -83,7 +88,9 @@ class AILog(db.Model):
         return {
             "id": self.id,
             "prompt": self.prompt,
-            "response": self.response,
+            "original_plan": self.original_plan,
+            "critique": self.critique,
+            "final_plan": self.final_plan,
             "latency": self.latency,
             "score": self.score,
             "created_at": self.created_at.isoformat()
