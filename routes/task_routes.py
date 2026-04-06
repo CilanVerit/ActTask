@@ -10,7 +10,7 @@ task_bp = Blueprint("task", __name__, url_prefix="/tasks")
 # 1. Create a task 
 @task_bp.route("",methods=["POST"])
 @jwt_required()
-def createTask():
+def create_task():
     data = request.get_json()
 
     current_user = int(get_jwt_identity())
@@ -38,7 +38,7 @@ def createTask():
 # 2. Get all tasks
 @task_bp.route("",methods=["GET"])
 @jwt_required()
-def listTask():
+def list_task():
     # Status filter (Overdue, Pending, Completed)
     status_filter = request.args.get("status")
     page = request.args.get("page", 1, type=int)
@@ -90,7 +90,7 @@ def listTask():
 # 3. Get statistics
 @task_bp.route("/stats", methods=["GET"])
 @jwt_required()
-def getStats():
+def get_stats():
 
     current_user = int(get_jwt_identity())
 
@@ -129,7 +129,7 @@ def getStats():
 # 4. Get a specific task 
 @task_bp.route("/<int:id>",methods=["GET"])
 @jwt_required()
-def getTask(id):
+def get_task(id):
 
     task = db.session.get(Task, id)
 
@@ -145,7 +145,7 @@ def getTask(id):
 # 5. Update a task
 @task_bp.route("/<int:id>",methods=["PUT"])
 @jwt_required()
-def updateTask(id):
+def update_task(id):
     task = db.session.get(Task, id)
 
     if task.owner != int(get_jwt_identity()):
@@ -168,7 +168,7 @@ def updateTask(id):
 # 6. Update status
 @task_bp.route("/<int:id>/status", methods=["PATCH"])
 @jwt_required()
-def updateStatus(id):
+def update_status(id):
     task = db.session.get(Task, id)
 
     if not task:
@@ -187,7 +187,7 @@ def updateStatus(id):
 # 7. Delete a task
 @task_bp.route("/<int:id>",methods=["DELETE"])
 @jwt_required()
-def deleteTask(id):
+def delete_task(id):
     task = db.session.get(Task, id)
 
     if not task:

@@ -10,7 +10,7 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # 8. Register account
 @auth_bp.route("/register",methods=["POST"])
-def registerAccount():
+def register_account():
     data = request.get_json()
 
     username = data.get("username")
@@ -39,7 +39,7 @@ def registerAccount():
 
 # 9. Login account
 @auth_bp.route("/login",methods=["POST"])
-def login():
+def login_account():
     data = request.get_json()
 
     username = data.get("username")

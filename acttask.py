@@ -48,11 +48,11 @@ def home():
 
 # Error Handlers
 @actTask.errorhandler(400)
-def requiredEmpty(error):
+def required_field(error):
     return jsonify({"error" : "This field is required."}), 400
 
 @actTask.errorhandler(401)
-def invalidUser(error):
+def invalid_user(error):
     return jsonify({"error" : "Invalid user or password."}), 401
 
 @actTask.errorhandler(403)
@@ -60,15 +60,15 @@ def unauthorized(error):
     return jsonify({"error": "Unauthorized"}), 403
 
 @actTask.errorhandler(404)
-def notFound(error):
+def not_found(error):
     return jsonify({"error" : "No task found."}), 404
 
 @actTask.errorhandler(409)
-def existAcc(error):
+def existed_username(error):
     return jsonify({"error" : "Username existed."}), 409
 
 @actTask.errorhandler(500)
-def serverError(error):
+def server_error(error):
     return jsonify({"error" : "Internal server error."}), 500
 
 #end = time.time()
