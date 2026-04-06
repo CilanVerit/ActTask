@@ -5,10 +5,10 @@ import math
 
 from models import db, Task
 
-task_bp = Blueprint("task", __name__)
+task_bp = Blueprint("task", __name__, url_prefix="/tasks")
 
 # 1. Create a task 
-@task_bp.route("/tasks",methods=["POST"])
+@task_bp.route("",methods=["POST"])
 @jwt_required()
 def createTask():
     data = request.get_json()
@@ -35,9 +35,8 @@ def createTask():
 
     return jsonify(newTask.serialize()), 201
 
-
 # 2. Get all tasks
-@task_bp.route("/tasks",methods=["GET"])
+@task_bp.route("",methods=["GET"])
 @jwt_required()
 def listTask():
     # Status filter (Overdue, Pending, Completed)
@@ -88,9 +87,8 @@ def listTask():
         "task" : taskList,
         }))
 
-
 # 3. Get statistics
-@task_bp.route("/tasks/stats", methods=["GET"])
+@task_bp.route("/stats", methods=["GET"])
 @jwt_required()
 def getStats():
 
@@ -128,9 +126,8 @@ def getStats():
         "overdue": overdue,
     })
 
-
 # 4. Get a specific task 
-@task_bp.route("/tasks/<int:id>",methods=["GET"])
+@task_bp.route("/<int:id>",methods=["GET"])
 @jwt_required()
 def getTask(id):
 
@@ -146,7 +143,7 @@ def getTask(id):
     return jsonify(task.serialize())
 
 # 5. Update a task
-@task_bp.route("/tasks/<int:id>",methods=["PUT"])
+@task_bp.route("/<int:id>",methods=["PUT"])
 @jwt_required()
 def updateTask(id):
     task = db.session.get(Task, id)
@@ -169,7 +166,7 @@ def updateTask(id):
     return jsonify(task.serialize())
 
 # 6. Update status
-@task_bp.route("/tasks/<int:id>/status", methods=["PATCH"])
+@task_bp.route("/<int:id>/status", methods=["PATCH"])
 @jwt_required()
 def updateStatus(id):
     task = db.session.get(Task, id)
@@ -188,7 +185,7 @@ def updateStatus(id):
     return jsonify(task.serialize())
 
 # 7. Delete a task
-@task_bp.route("/tasks/<int:id>",methods=["DELETE"])
+@task_bp.route("/<int:id>",methods=["DELETE"])
 @jwt_required()
 def deleteTask(id):
     task = db.session.get(Task, id)

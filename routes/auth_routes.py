@@ -5,11 +5,11 @@ from models import db, User
 from flask_jwt_extended import create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
 # 8. Register account
-@auth_bp.route("/auth/register",methods=["POST"])
+@auth_bp.route("/register",methods=["POST"])
 def registerAccount():
     data = request.get_json()
 
@@ -38,7 +38,7 @@ def registerAccount():
     return jsonify({"message" : "Account registered successfully."}), 201
 
 # 9. Login account
-@auth_bp.route("/auth/login",methods=["POST"])
+@auth_bp.route("/login",methods=["POST"])
 def login():
     data = request.get_json()
 
