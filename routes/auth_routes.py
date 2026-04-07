@@ -56,7 +56,7 @@ def login_account():
 
     if not user or not check_password_hash(user.password, password):
         abort(401)
-
+    print("USER ID:", user.userid)
     access_token = create_access_token(identity = str(user.userid))
 
     return jsonify({"access_token": access_token})
