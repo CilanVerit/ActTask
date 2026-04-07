@@ -4,12 +4,6 @@ A backend-focused task management system with integrated AI planning and an idem
 
 ---
 
-## Overview
-
-ActTask is a Flask-based backend system designed to manage user tasks while demonstrating real-world backend and data engineering concepts, including API design, authentication, data processing, and pipeline-based ingestion.
-
----
-
 ## Key Features
 
 ### Core Backend
