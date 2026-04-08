@@ -44,7 +44,7 @@ def plan_day():
     ]
 
     prompt = f"""
-    You are a productivity assistant.
+    You are a strict productivity assistant.
 
     Tasks:
     {chr(10).join(task_list)}
@@ -52,20 +52,29 @@ def plan_day():
     Instructions:
     - Prioritize overdue tasks first
     - Then handle pending tasks
-    - Add estimated time for each task (examples, 30 min, 1 hour, etc)
+    - Use ONLY plain text (NO markdown symbols like ** or ###)
+    - Format clean bullet points using "-"
+    - Always include time estimates (e.g., 30 min, 1 hour)
+    - Keep each section short and readable
     - Do not overload any time block
     - Create a realistic day plan (morning, then afternoon, then evening)
     - Keep it concise and actionable (bullet points)
 
+    IMPORTANT:
+    - Use ONLY tasks from the provided list
+    - Do NOT invent new tasks
+
+    If rules are broken, fix them aggressively.
+
     Output format:
     Morning:
-    - ...
+    - Task (time)
 
     Afternoon:
-    - ...
+    - Task (time)
 
     Evening:
-    - ...
+    - Task (time)
     """
 
     try:
@@ -80,19 +89,19 @@ def plan_day():
                 {"role": "system", "content": "You are a helpful productivity assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=200,
+            max_tokens=min(500, 100 + len(task_list) * 20),
         )
 
         ai_plan = planner_response.choices[0].message.content or "No plan generated."
 
         # Improvement loop
-        MAX_ITERATIONS = 2
+        max_iterations = 2
 
         current_plan = ai_plan
         final_critique = None
         final_score = 0
 
-        for _ in range(MAX_ITERATIONS):
+        for _ in range(max_iterations):
             critique = critique_plan(current_plan, task_list)
             parsed_score = extract_score(critique)
 
@@ -178,8 +187,10 @@ def critique_plan(plan_text, task_list):
     4. Coverage:
     - Are important tasks included?
 
-    Be harsh on realism. Penalize overloaded schedules heavily.
-    Say Rule! To strongly emphasize a broken rule from the above rules.
+    Be precise and constructive.
+    Only flag major issues.
+    Do NOT invent new tasks.
+    Do NOT change task list.
     State what were the broken rule(s).
 
     Output format:
@@ -211,18 +222,28 @@ def improve_plan(original_plan, critique):
     Critique:
     {critique}
 
-    Improve the plan based on the critique.
+    Improve the plan STRICTLY based on the critique.
     Fix the issues with a strong focus on:
-    - Reducing overload
+    - Fix ordering, time estimates, workload balance
     - Keeping total time under 8 hours, unless user wants to do more
     - Adding realistic time estimates
     - Spreading tasks properly across the day
+    - DO NOT add new tasks
+    - DO NOT use markdown
+    - Format clean bullet points using "-"
 
-    If you hear Rule! that means you are breaking rule(s) and got heavy penalty.
     Focus on where the broken rule(s) were and adjust correspondingly.
 
     Keep same format:
-    Morning / Afternoon / Evening
+    Output format:
+    Morning: 
+    - Task (time)
+
+    Afternoon: 
+    - Task (time)
+
+    Evening: 
+    - Task (time)
     """
 
     response = client.chat.completions.create(
@@ -272,7 +293,7 @@ def estimate_total_time(plan_text):
     total = 0
 
     for value, unit in times:
-        value = int(value)
+        value = float(value)
         if unit == "hour":
             total += value * 60
         else:

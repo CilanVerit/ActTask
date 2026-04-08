@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 import { useState, useEffect } from "react";
 import Login from "./Login";
 
@@ -8,8 +9,11 @@ export default function App() {
 
   const [tasks, setTasks] = useState(null);
   const [newTask, setNewTask] = useState("");
-  const [view, setView] = useState("dashboard");  // "Dashboard" | "Tasks" Tab view
+  const [view, setView] = useState("dashboard");  // "Dashboard" | "Tasks" | "AI" Tab view
   const [stats, setStats] = useState(null);
+  const [aiPlan, setAIPlan] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [aiFinal, setAIFinal] = useState(null);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -18,6 +22,37 @@ export default function App() {
     }
   }, [isLoggedIn]);
 
+  const generatePlan = async () => {
+    try {
+      setLoadingAI(true);
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://127.0.0.1:5000/ai/plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      setAIPlan(data.final_plan);
+      setAIFinal({
+        score: data.score,
+        latency: data.latency,
+      });
+
+      setView("ai");
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+  
   const fetchStats = async () => {
     const token = localStorage.getItem("token");
 
@@ -173,28 +208,46 @@ export default function App() {
       >
         View Tasks
       </button>
+
+      <button
+        onClick={() => setView("ai")}
+        className="bg-purple-500 text-white px-4 py-2 rounded"
+      >
+        AI Plan
+      </button>
     </div>
 
   {view === "dashboard" && (
-    <div className="grid grid-cols-2 gap-4 mb-6">
-      <div className="bg-white p-4 rounded shadow">
-        <p>Total</p>
-        <h2 className="text-xl font-bold">{stats?.total ?? "-"}</h2>
+    <div className="max-w-4xl mx-auto">
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white p-4 rounded shadow">
+          <p>Total</p>
+          <h2 className="text-xl font-bold">{stats?.total ?? "-"}</h2>
+        </div>
+
+        <div className="bg-green-100 p-4 rounded shadow">
+          <p>Completed</p>
+          <h2 className="text-xl font-bold">{stats?.completed ?? "-"}</h2>
+        </div>
+
+        <div className="bg-yellow-100 p-4 rounded shadow">
+          <p>Pending</p>
+          <h2 className="text-xl font-bold">{stats?.pending ?? "-"}</h2>
+        </div>
+
+        <div className="bg-red-100 p-4 rounded shadow">
+          <p>Overdue</p>
+          <h2 className="text-xl font-bold">{stats?.overdue ?? "-"}</h2>
+        </div>
       </div>
 
-      <div className="bg-green-100 p-4 rounded shadow">
-        <p>Completed</p>
-        <h2 className="text-xl font-bold">{stats?.completed ?? "-"}</h2>
-      </div>
-
-      <div className="bg-yellow-100 p-4 rounded shadow">
-        <p>Pending</p>
-        <h2 className="text-xl font-bold">{stats?.pending ?? "-"}</h2>
-      </div>
-
-      <div className="bg-red-100 p-4 rounded shadow">
-        <p>Overdue</p>
-        <h2 className="text-xl font-bold">{stats?.overdue ?? "-"}</h2>
+      <div className="flex justify-center mt-6">
+        <button
+          onClick={generatePlan}
+          className="bg-purple-500 text-white px-6 py-3 rounded shadow"
+        >
+          {loadingAI ? "Generating AI Plan..." : "Generate AI Plan"}
+        </button>
       </div>
     </div>
   )}
@@ -256,6 +309,55 @@ export default function App() {
       </ul>
     )}
   </div>
+  )}
+  {view === "ai" && (
+    <div className="max-w-2xl mx-auto">
+      <div className="relative h-12 mb-4">
+        <button
+          onClick={() => setView("dashboard")}
+          className="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-500 text-white px-3 py-1 rounded"
+        >
+          ← Back to Dashboard
+        </button>
+
+        <h2 className="text-xl font-bold text-center">Your AI Plan</h2>
+      </div>
+
+      {aiFinal && (
+        <div className="flex justify-between items-center mb-4 text-sm text-gray-600">
+          <span>
+            Score: <span className="font-semibold">{aiFinal.score}/10</span> • Latency: {aiFinal.latency}s
+          </span>
+        </div>
+      )}
+
+      <div className="mt-16">
+        {aiPlan ? (
+          <div className="bg-white p-6 rounded-xl shadow-lg prose">
+            <ReactMarkdown>{aiPlan}</ReactMarkdown>
+          </div>
+        ) : (
+          <p className="text-center text-gray-400 italic mt-10">
+            No AI plan yet. Click "Generate AI Plan" to start.
+          </p>
+        )}
+      </div>
+      <div className="flex justify-center mt-8">
+        <button
+          onClick={generatePlan}
+          disabled={loadingAI}
+          className={`px-6 py-3 rounded text-white shadow
+            ${loadingAI ? "bg-gray-400" : "bg-purple-500 hover:bg-purple-600"}
+          `}
+        >
+          {loadingAI
+            ? "Generating AI Plan..."
+            : aiPlan
+            ? "Regenerate Plan"
+            : "Generate AI Plan"}
+        </button>
+      </div>
+    </div>
   )}
 </div> 
 )}
