@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, abort, render_template
 from flask_migrate import Migrate
+from flask_cors import CORS
 from sqlalchemy import select, func
 import math
 import time
@@ -22,6 +23,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # Start Flask app
 actTask = Flask(__name__)
+CORS(actTask)
 
 # Configuration
 actTask.config.from_object(Config)

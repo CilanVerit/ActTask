@@ -281,6 +281,6 @@ def estimate_total_time(plan_text):
     return total  # in minutes
 
 def extract_overload_flag(text):
-    if "Rule!" in text.lower():
+    if "rule!" in text.lower():
         return True
     return False
